@@ -2,5 +2,8 @@
   "name": "nexus-chatbot",
   "version": "1.0.0",
   "type": "module",
-  "private": true
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  }
 }
