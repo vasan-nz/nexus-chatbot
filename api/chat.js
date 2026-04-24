@@ -4,6 +4,9 @@
  * Knowledge is read exclusively from process.env.NEXUS_KNOWLEDGE.
  */
 
+// NOTE: Stale entries are not actively evicted. On a low-traffic personal
+// portfolio, Vercel instance recycling provides adequate cleanup. For
+// higher-traffic deployments, add a periodic sweep or use an external store.
 const rateLimitStore = new Map();
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60 * 60 * 1000;
@@ -163,8 +166,10 @@ export default async function handler(req, res) {
     const reader = groqRes.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let streamDone = false;
 
     while (true) {
+      if (streamDone) break;
       const { done, value } = await reader.read();
       if (done) break;
 
@@ -177,6 +182,7 @@ export default async function handler(req, res) {
         const raw = line.slice(6).trim();
         if (raw === '[DONE]') {
           res.write('data: [DONE]\n\n');
+          streamDone = true;
           break;
         }
         try {
@@ -201,8 +207,7 @@ export default async function handler(req, res) {
         }
       });
     } else {
-      res.write('data: [ERROR]\n\n');
-      res.end();
+      try { res.write('data: [ERROR]\n\n'); res.end(); } catch { /* client disconnected */ }
     }
   }
 }
