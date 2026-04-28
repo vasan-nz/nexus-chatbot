@@ -528,6 +528,11 @@
 
 #nx-textarea:focus { border-color: rgba(100, 108, 255, 0.45); }
 
+#nx-textarea:focus-visible {
+  outline: 2px solid rgba(100, 108, 255, 0.6);
+  outline-offset: 1px;
+}
+
 .nx-input-controls {
   display: flex;
   flex-direction: column;

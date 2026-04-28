@@ -51,7 +51,12 @@ function checkRateLimit(ip) {
  */
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://manickavasan.com', 'http://localhost:5173', 'http://localhost:3000'];
+  const allowed = [
+    'https://manickavasan.com',
+    'https://www.manickavasan.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
   if (allowed.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
@@ -127,7 +132,12 @@ export default async function handler(req, res) {
 
   const safeHistory = Array.isArray(history)
     ? history
-        .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string')
+        .filter(m =>
+          m &&
+          typeof m.role === 'string' &&
+          typeof m.content === 'string' &&
+          m.content.length <= 1000
+        )
         .slice(-6)
     : [];
 
