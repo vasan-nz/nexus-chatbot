@@ -13,9 +13,8 @@
    * Works cross-domain: the script is hosted on the Vercel deployment but
    * runs in the context of the portfolio page.
    */
-  const scriptEl =
-    document.currentScript ||
-    document.querySelector('script[src*="nexus.js"]');
+  // document.currentScript is null for defer scripts; querySelector is the real mechanism.
+  const scriptEl = document.querySelector('script[src*="nexus.js"]');
   const API_BASE = scriptEl ? new URL(scriptEl.src).origin : '';
   const API_URL  = `${API_BASE}/api/chat`;
 
@@ -29,8 +28,10 @@
     #history          = [];
     #isStreaming      = false;
     #chipsHidden      = false;
-    #lastUserMessage  = null;
-    #touchStartY      = 0;
+    #lastUserMessage    = null;
+    #touchStartY        = 0;
+    #boundDocClick      = null;
+    #timestampInterval  = null;
 
     constructor() {
       this.#injectDOM();
@@ -162,7 +163,7 @@
       }, { passive: true });
 
       // Click outside panel closes it
-      document.addEventListener('click', (e) => {
+      this.#boundDocClick = (e) => {
         if (
           this.#isOpen &&
           !this.panel.contains(e.target) &&
@@ -170,7 +171,8 @@
         ) {
           this.close();
         }
-      });
+      };
+      document.addEventListener('click', this.#boundDocClick);
     }
 
     /** Toggle open/close */
@@ -314,7 +316,7 @@
      * Runs on a 30-second interval.
      */
     #startTimestampUpdater() {
-      setInterval(() => {
+      this.#timestampInterval = setInterval(() => {
         this.$messages?.querySelectorAll('.nx-timestamp[data-time]').forEach((el) => {
           const elapsed = Date.now() - parseInt(el.dataset.time, 10);
           if (elapsed < 60_000) {
@@ -326,6 +328,14 @@
           }
         });
       }, 30_000);
+    }
+
+    /** Remove global listeners and clear timers (for SPA teardown). */
+    destroy() {
+      document.removeEventListener('click', this.#boundDocClick);
+      clearInterval(this.#timestampInterval);
+      this.launcher.remove();
+      this.panel.remove();
     }
 
     /** Read textarea, validate, then fire the streaming request */
