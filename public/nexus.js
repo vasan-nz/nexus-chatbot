@@ -6,6 +6,120 @@
 (function () {
   'use strict';
 
+  // ─── Cursor-Magnet Effect ─────────────────────────────────────────────────
+  // Inlined so the portfolio only needs one <script> tag (nexus.js).
+  // Also available standalone via nexus-magnet.js for other projects.
+
+  function createMagnetEffect(el, opts) {
+    opts = opts || {};
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      navigator.maxTouchPoints > 0 ||
+      'ontouchstart' in window
+    ) {
+      return { destroy: function () {} };
+    }
+
+    var radius      = opts.radius      !== undefined ? opts.radius      : 140;
+    var maxShift    = opts.maxShift    !== undefined ? opts.maxShift    : 10;
+    var damping     = opts.damping     !== undefined ? opts.damping     : 0.12;
+    var scaleFactor = opts.scaleFactor !== undefined ? opts.scaleFactor : 1.05;
+    var isActive    = typeof opts.isActive === 'function' ? opts.isActive : function () { return true; };
+
+    var curX = 0, curY = 0, curS = 1, curGlow = 0;
+    var tgtX = 0, tgtY = 0, tgtS = 1, tgtGlow = 0;
+    var isNear = false, rafId = null, loopActive = false;
+
+    function getCenter() {
+      var r = el.getBoundingClientRect();
+      return [r.left + r.width * 0.5, r.top + r.height * 0.5];
+    }
+
+    function tick() {
+      curX    += (tgtX    - curX)    * damping;
+      curY    += (tgtY    - curY)    * damping;
+      curS    += (tgtS    - curS)    * damping;
+      curGlow += (tgtGlow - curGlow) * damping;
+
+      el.style.transform =
+        'translate3d(' + curX.toFixed(3) + 'px,' + curY.toFixed(3) + 'px,0) ' +
+        'scale(' + curS.toFixed(4) + ')';
+
+      if (curGlow > 0.005) {
+        var ring    = (curGlow * 0.45).toFixed(3);
+        var diffuse = (curGlow * 0.28).toFixed(3);
+        var blur    = (8 + curGlow * 24).toFixed(1);
+        el.style.boxShadow =
+          '0 0 0 1px rgba(100,108,255,' + ring + '),' +
+          '0 8px ' + blur + 'px rgba(100,108,255,' + diffuse + ')';
+      } else if (el.style.boxShadow) {
+        el.style.boxShadow = '';
+      }
+
+      var settled = !isNear &&
+        Math.abs(curX) < 0.05 && Math.abs(curY) < 0.05 &&
+        Math.abs(curS - 1) < 0.001 && curGlow < 0.005;
+
+      if (settled) {
+        el.style.transform = '';
+        el.style.boxShadow = '';
+        el.style.transition = '';
+        el.style.animation = '';
+        loopActive = false;
+        rafId = null;
+        return;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function startLoop() {
+      if (loopActive) return;
+      loopActive = true;
+      // Disable CSS transition — rAF owns transform now
+      el.style.transition = 'none';
+      // CSS animations outrank inline styles in the cascade; pause breathe first
+      el.style.animation = 'none';
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function onMouseMove(e) {
+      if (!isActive()) {
+        if (isNear) { isNear = false; tgtX = tgtY = 0; tgtS = 1; tgtGlow = 0; }
+        return;
+      }
+      var c    = getCenter();
+      var dx   = e.clientX - c[0];
+      var dy   = e.clientY - c[1];
+      var dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < radius) {
+        var pull = 1 - dist / radius;
+        isNear = true;
+        tgtX = (dx / radius) * maxShift;
+        tgtY = (dy / radius) * maxShift;
+        tgtS = 1 + (scaleFactor - 1) * pull;
+        tgtGlow = pull;
+        startLoop();
+      } else if (isNear) {
+        isNear = false;
+        tgtX = tgtY = 0;
+        tgtS = 1;
+        tgtGlow = 0;
+      }
+    }
+
+    document.addEventListener('mousemove', onMouseMove, { passive: true });
+    return {
+      destroy: function () {
+        document.removeEventListener('mousemove', onMouseMove);
+        if (rafId) cancelAnimationFrame(rafId);
+        el.style.transform = el.style.boxShadow = el.style.transition = el.style.animation = '';
+      }
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
   /**
