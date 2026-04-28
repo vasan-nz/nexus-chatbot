@@ -19,6 +19,8 @@
   --nx-shadow:      0 24px 48px rgba(0, 0, 0, 0.55), 0 8px 16px rgba(0, 0, 0, 0.3);
   --nx-green:       #22c55e;
   --nx-red:         #ef4444;
+  --nx-red-light:   #fca5a5;
+  --nx-accent-3:    #818cf8;
   --nx-amber:       #f59e0b;
   --nx-text:        rgba(255, 255, 255, 0.92);
   --nx-text-muted:  rgba(255, 255, 255, 0.45);
@@ -97,8 +99,9 @@
   font-weight: 700;
   letter-spacing: 1px;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
-  outline: none;
+  outline: none; /* removed by :focus-visible below for keyboard users */
 
   transition: transform 0.25s var(--nx-spring), box-shadow 0.25s ease;
   animation: nx-breathe 3s ease-in-out infinite;
@@ -145,6 +148,20 @@
   transform: scale(0.97);
 }
 
+#nx-launcher:focus-visible {
+  outline: 2px solid var(--nx-accent);
+  outline-offset: 3px;
+}
+
+#nx-close-btn:focus-visible,
+#nx-send-btn:focus-visible,
+.nx-chip:focus-visible,
+.nx-retry-btn:focus-visible {
+  outline: 2px solid var(--nx-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ─── Chat Panel ────────────────────────────────────────────────────────── */
 
 #nx-panel {
@@ -170,7 +187,6 @@
   transform-origin: bottom right;
 
   animation: nx-slide-up 0.4s var(--nx-spring) forwards;
-  transition: border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 #nx-panel.nx-hidden {
@@ -313,6 +329,7 @@
   gap: 10px;
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 108, 255, 0.15) transparent;
+  overscroll-behavior: contain;
 }
 
 #nx-messages::-webkit-scrollbar       { width: 3px; }
@@ -413,7 +430,7 @@
 }
 
 .nx-user .nx-bubble {
-  background: linear-gradient(135deg, var(--nx-accent) 0%, #818cf8 100%);
+  background: linear-gradient(135deg, var(--nx-accent) 0%, var(--nx-accent-3) 100%);
   border-radius: 12px 4px 4px 12px;
 }
 
@@ -423,7 +440,7 @@
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-left: 3px solid var(--nx-red);
   border-radius: 4px 12px 12px 4px;
-  color: #fca5a5;
+  color: var(--nx-red-light);
 }
 
 .nx-timestamp {
@@ -439,7 +456,7 @@
   border-radius: 8px;
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
+  color: var(--nx-red-light);
   font-size: 11px;
   cursor: pointer;
   font-family: var(--nx-font);
@@ -588,5 +605,23 @@
   #nx-launcher {
     bottom: 20px;
     right: 20px;
+  }
+
+  #nx-input-area {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ─── Reduced Motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  #nx-launcher,
+  #nx-launcher::before,
+  .nx-status-dot,
+  .nx-typing-dot,
+  .nx-message,
+  .nx-typing-indicator {
+    animation: none;
+    transition: none;
   }
 }
