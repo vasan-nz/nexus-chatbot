@@ -32,11 +32,13 @@
     #touchStartY        = 0;
     #boundDocClick      = null;
     #timestampInterval  = null;
+    #magnet             = null;
 
     constructor() {
       this.#injectDOM();
       this.#bindEvents();
       this.#startTimestampUpdater();
+      this.#initMagnet();
     }
 
     /** Build and inject all DOM elements into document.body */
@@ -330,10 +332,19 @@
       }, 30_000);
     }
 
+    /** Wire up cursor-magnet effect; no-op if nexus-magnet.js not loaded. */
+    #initMagnet() {
+      if (typeof createMagnetEffect !== 'function') return;
+      this.#magnet = createMagnetEffect(this.launcher, {
+        isActive: () => !this.#isOpen,
+      });
+    }
+
     /** Remove global listeners and clear timers (for SPA teardown). */
     destroy() {
       document.removeEventListener('click', this.#boundDocClick);
       clearInterval(this.#timestampInterval);
+      this.#magnet?.destroy();
       this.launcher.remove();
       this.panel.remove();
     }
